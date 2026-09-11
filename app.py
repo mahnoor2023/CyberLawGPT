@@ -29,6 +29,8 @@ DRIVE_FILE_ID = "1zE6ll1wwOX1l6qudvgwp_P3afwDurdkn"
 PDF_PATH = Path("cyber_law_source.pdf")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 GROQ_MODEL = "openai/gpt-oss-120b"
+NCCIA_COMPLAINT_URL = "https://complaint.nccia.gov.pk/"
+NCCIA_WEBSITE_URL = "https://www.nccia.gov.pk/"
 
 
 # -----------------------------
@@ -37,33 +39,77 @@ GROQ_MODEL = "openai/gpt-oss-120b"
 st.markdown(
     """
     <style>
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 0.1rem;
+    .stApp { background: linear-gradient(180deg, #f8fafc 0%, #ffffff 42%, #f8fafc 100%); }
+    .block-container { max-width: 1180px; padding-top: 2.1rem; padding-bottom: 2rem; }
+
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #111827 100%); }
+    [data-testid="stSidebar"] * { color: #e5e7eb; }
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stSlider label,
+    [data-testid="stSidebar"] .stCheckbox label { color: #cbd5e1 !important; }
+    [data-testid="stSidebar"] [data-baseweb="select"] > div { background: #1e293b; border-color: #334155; }
+
+    .hero {
+        position: relative; overflow: hidden; padding: 30px 32px 28px 32px;
+        border-radius: 24px; background: linear-gradient(135deg, #0f172a 0%, #172554 58%, #1e3a8a 100%);
+        color: white; box-shadow: 0 18px 45px rgba(15, 23, 42, .16); margin-bottom: 18px;
     }
-    .subtitle {
-        color: #6b7280;
-        font-size: 1.05rem;
-        margin-bottom: 1.2rem;
+    .hero:after {
+        content: ""; position: absolute; width: 260px; height: 260px; right: -80px; top: -110px;
+        border-radius: 50%; background: rgba(96, 165, 250, .16);
     }
-    .source-box {
-        border: 1px solid rgba(128,128,128,.25);
-        border-radius: 10px;
-        padding: 12px;
-        margin-top: 8px;
+    .hero-kicker {
+        display: inline-block; padding: 6px 11px; border: 1px solid rgba(255,255,255,.18);
+        border-radius: 999px; background: rgba(255,255,255,.08); color: #dbeafe;
+        font-size: .78rem; font-weight: 700; letter-spacing: .04em; margin-bottom: 12px;
     }
+    .hero-title { font-size: clamp(2rem, 4vw, 3.15rem); line-height: 1.05; font-weight: 850; margin: 0; letter-spacing: -.04em; }
+    .hero-title span { color: #93c5fd; }
+    .hero-subtitle { max-width: 760px; margin: 12px 0 20px 0; color: #cbd5e1; font-size: 1.02rem; line-height: 1.65; }
+    .status-row { display: flex; flex-wrap: wrap; gap: 9px; }
+    .status-pill { padding: 7px 11px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.13); color: #e2e8f0; font-size: .78rem; font-weight: 600; }
+    .status-dot { color: #4ade80; }
+
+    .section-heading, .try-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 25px 0 10px 0; }
+    .feature-card {
+        min-height: 142px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 18px;
+        background: rgba(255,255,255,.88); box-shadow: 0 7px 25px rgba(15, 23, 42, .06);
+    }
+    .feature-icon { font-size: 1.55rem; margin-bottom: 8px; }
+    .feature-title { font-size: 1rem; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
+    .feature-text { color: #64748b; font-size: .88rem; line-height: 1.5; }
+
+    .complaint-card {
+        padding: 18px 20px; border-radius: 18px; border: 1px solid #fecaca;
+        background: linear-gradient(135deg, #fff7ed 0%, #fff1f2 100%); margin: 22px 0 8px 0;
+    }
+    .complaint-title { font-size: 1.05rem; font-weight: 800; color: #7f1d1d; margin-bottom: 4px; }
+    .complaint-text { color: #57534e; font-size: .88rem; line-height: 1.5; }
+    .try-subtitle { color: #64748b; font-size: .9rem; margin-bottom: 10px; }
+
+    .stButton > button, .stLinkButton > a {
+        border-radius: 11px !important; font-weight: 700 !important; border: 1px solid #dbe2ea !important;
+        transition: all .18s ease !important;
+    }
+    .stButton > button:hover, .stLinkButton > a:hover { transform: translateY(-1px); border-color: #93c5fd !important; box-shadow: 0 6px 18px rgba(37,99,235,.10); }
+
     .legal-note {
-        padding: 12px;
-        border-radius: 10px;
-        background: rgba(255,193,7,.10);
-        border: 1px solid rgba(255,193,7,.35);
+        padding: 13px 16px; border-radius: 13px; background: #fffbeb; border: 1px solid #fde68a;
+        color: #57534e; font-size: .88rem; line-height: 1.55; margin-top: 16px;
+    }
+    [data-testid="stChatMessage"] { border-radius: 16px; }
+    [data-testid="stChatInput"] { margin-top: 10px; }
+    .footer { text-align: center; padding: 20px 8px 4px 8px; color: #94a3b8; font-size: .78rem; line-height: 1.6; }
+
+    @media (max-width: 700px) {
+        .block-container { padding-top: 1rem; }
+        .hero { padding: 24px 20px; border-radius: 18px; }
+        .feature-card { min-height: auto; }
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 # -----------------------------
 # Secrets / environment
@@ -377,34 +423,69 @@ def ask_groq(question, retrieved, technicality, response_size, language, answer_
 # -----------------------------
 # App initialization
 # -----------------------------
-st.markdown('<div class="main-title">⚖️ CyberLawGPT</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="subtitle">RAG-powered Pakistani cyber-law information assistant '
-    'using FAISS + Sentence Transformers + Groq.</div>',
-    unsafe_allow_html=True,
-)
-
-
-
 st.markdown(
     """
-    <div style="padding:16px;border:1px solid rgba(220,53,69,.35);border-radius:12px;background:rgba(220,53,69,.07);">
-    <h4 style="margin-top:0;">🚨 Need to report a cybercrime?</h4>
-    <p style="margin-bottom:8px;">CyberLawGPT provides information only. For an actual cybercrime complaint, use the official National Cyber Crime Investigation Agency (NCCIA) portal.</p>
-    </div>
+    <section class="hero">
+        <div class="hero-kicker">⚖️ PAKISTAN CYBER-LAW • AI LEGAL INFORMATION</div>
+        <h1 class="hero-title">CyberLaw<span>GPT</span></h1>
+        <p class="hero-subtitle">
+            Ask questions about Pakistani cyber law and get source-grounded explanations
+            powered by Retrieval-Augmented Generation, FAISS and Groq.
+        </p>
+        <div class="status-row">
+            <span class="status-pill"><span class="status-dot">●</span> Legal knowledge base</span>
+            <span class="status-pill">🔎 FAISS retrieval</span>
+            <span class="status-pill">🤖 Groq AI</span>
+            <span class="status-pill">📚 PDF source-grounded</span>
+        </div>
+    </section>
     """,
     unsafe_allow_html=True,
 )
 
-st.link_button("📝 File a Cybercrime Complaint with NCCIA", "https://complaint.nccia.gov.pk/")
-st.caption("Official NCCIA website: https://www.nccia.gov.pk/")
+st.markdown('<div class="section-heading">What can CyberLawGPT help with?</div>', unsafe_allow_html=True)
+feature_cols = st.columns(3)
+features = [
+    ("🔍", "Ask about cyber law", "Understand cyber offences, legal concepts, sections and requirements using the retrieved legal source."),
+    ("⚖️", "Explore legal scenarios", "Get structured explanations for fraud, harassment, unauthorized access, privacy and other cyber-law questions."),
+    ("🛡️", "Learn safely", "Educational, compliance and defensive guidance without providing instructions for unlawful cyber activity."),
+]
+for col, (icon, title, text) in zip(feature_cols, features):
+    with col:
+        st.markdown(
+            f"""<div class="feature-card">
+                <div class="feature-icon">{icon}</div>
+                <div class="feature-title">{title}</div>
+                <div class="feature-text">{text}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+st.markdown(
+    """
+    <div class="complaint-card">
+        <div class="complaint-title">🚨 Victim of a cybercrime?</div>
+        <div class="complaint-text">
+            CyberLawGPT can explain the relevant legal information, but an actual
+            complaint should be submitted through the official National Cyber Crime
+            Investigation Agency (NCCIA) channel.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+complaint_col, website_col = st.columns([1, 1])
+with complaint_col:
+    st.link_button("📝 Submit Cybercrime Complaint", NCCIA_COMPLAINT_URL, use_container_width=True)
+with website_col:
+    st.link_button("🌐 Visit Official NCCIA Website", NCCIA_WEBSITE_URL, use_container_width=True)
 
 st.markdown(
     """
     <div class="legal-note">
-    <b>Important:</b> CyberLawGPT provides source-grounded legal information for
-    education and general guidance. It is not a lawyer, does not create an
-    attorney-client relationship, and should not be treated as a final legal opinion.
+        <b>Important:</b> CyberLawGPT provides source-grounded legal information for
+        education and general guidance. It is not a lawyer, does not create an
+        attorney-client relationship, and should not be treated as a final legal opinion.
     </div>
     """,
     unsafe_allow_html=True,
@@ -462,8 +543,16 @@ except Exception as exc:
     st.error(str(exc))
     st.stop()
 
-st.success(
-    f"Knowledge base ready: {len(records)} indexed passages from the supplied PDF."
+st.markdown(
+    f"""
+    <div style="margin-top:18px;padding:11px 15px;border-radius:12px;
+                background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;
+                font-size:.86rem;">
+        <b>● Knowledge base ready</b> &nbsp;•&nbsp; {len(records)} indexed passages
+        &nbsp;•&nbsp; Source PDF loaded &nbsp;•&nbsp; FAISS index active
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 # Session history
@@ -474,9 +563,27 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-question = st.chat_input(
-    "Ask a question about Pakistani cyber law..."
+st.markdown('<div class="try-title">Try asking</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="try-subtitle">Start with an example or type your own question below.</div>',
+    unsafe_allow_html=True,
 )
+
+suggestion_cols = st.columns(3)
+suggestions = [
+    "What is unauthorized access under Pakistani cyber law?",
+    "What should I do if I become a victim of online fraud?",
+    "What cyber law applies to online harassment?",
+]
+for i, (col, suggestion) in enumerate(zip(suggestion_cols, suggestions)):
+    with col:
+        if st.button(suggestion, key=f"suggestion_{i}", use_container_width=True):
+            st.session_state["pending_question"] = suggestion
+            st.rerun()
+
+pending_question = st.session_state.pop("pending_question", None)
+chat_question = st.chat_input("Ask anything about Pakistani cyber law...")
+question = chat_question or pending_question
 
 if question:
     cleaned_question = question.strip()
@@ -544,8 +651,14 @@ if question:
 
 # Footer
 st.divider()
-st.caption(
-    "CyberLawGPT is a source-grounded educational tool. "
-    "Verify important legal matters against the current official Pakistani law "
-    "and obtain professional legal advice where appropriate."
+st.markdown(
+    """
+    <div class="footer">
+        <b>CyberLawGPT</b> • Source-grounded Pakistani cyber-law information assistant<br>
+        Verify important legal matters against the current official law and obtain
+        professional legal advice where appropriate.<br>
+        For cybercrime complaints, use the official NCCIA portal.
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
