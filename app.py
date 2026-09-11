@@ -88,11 +88,12 @@ def ensure_pdf():
         return PDF_PATH
 
     try:
+        # gdown 5.x accepts a Google Drive file ID directly.
+        # Do not use fuzzy=True because newer gdown releases removed that argument.
         gdown.download(
             id=DRIVE_FILE_ID,
             output=str(PDF_PATH),
             quiet=False,
-            fuzzy=True,
         )
     except Exception as exc:
         raise RuntimeError(
